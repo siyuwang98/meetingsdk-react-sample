@@ -14,10 +14,10 @@ ZoomMtg.i18n.reload('en-US');
 function App() {
 
   // setup your signature endpoint here: https://github.com/zoom/meetingsdk-sample-signature-node.js
-  var signatureEndpoint = ''
+  var signatureEndpoint = 'http://localhost:4000'
   // This Sample App has been updated to use SDK App type credentials https://marketplace.zoom.us/docs/guides/build/sdk-app
-  var sdkKey = ''
-  var meetingNumber = '123456789'
+  var sdkKey = 'gBV3uWEdYIcCid6cDgTNM29zw30rIWT5Mbde'
+  var meetingNumber = '97437031435'
   var role = 0
   var leaveUrl = 'http://localhost:3000'
   var userName = 'React'
@@ -81,9 +81,9 @@ function App() {
     <div className="App">
       <main>
         <h1>Zoom Meeting SDK Sample React</h1>
-
         <button onClick={getSignature}>Join Meeting</button>
       </main>
+      <iframe width="560" height="315" src="https://www.youtube.com/embed/ypTjHQ-JtIk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
   );
 }
