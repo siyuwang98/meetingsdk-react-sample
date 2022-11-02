@@ -15,7 +15,7 @@ function App() {
   const client = ZoomMtgEmbedded.createClient();
 
   // setup your signature endpoint here: https://github.com/zoom/meetingsdk-sample-signature-node.js
-  var signatureEndpoint = 'http://localhost:4000'
+  // var signatureEndpoint = 'http://localhost:4000'
   // This Sample App has been updated to use SDK App type credentials https://marketplace.zoom.us/docs/guides/build/sdk-app
   var sdkKey = 'gBV3uWEdYIcCid6cDgTNM29zw30rIWT5Mbde'
   var meetingNumber = ''
