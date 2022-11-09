@@ -1,30 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
 
 import './App.css';
 import ZoomMtgEmbedded from '@zoomus/websdk/embedded';
 const KJUR = require('jsrsasign')
 
+const socket = io();
+
 // <iframe hidden={hideVideo} src="https://player.twitch.tv/?channel=hydejackal&parent=localhost" frameborder="0" allowfullscreen="true" scrolling="no" height="378" width="620"></iframe>
 
 function App() {
+  const [userType, setUserType] = useState('');
   const [hideVideo, setVideo] = useState(true);
   const [meetingUrl, setMeeting] = useState("");
   const [userName, setUserName] = useState("");
   const [isMainRoom, setRoom] = useState(true);
+  const [isMainView, setMainView] = useState(false);
+  const [userInMain, setUserInMain] = useState(true);
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log("connected")
+    });
+
+    socket.on('disconnect', () => {
+      console.log("disconnected")
+    });
+
+    socket.on('changeToMain', (value) => {
+      console.log("organizer changed user to main room ", value)
+      setRoom(value)
+    });
+
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('changeUserToMain');
+    };
+  }, []);
 
   const client = ZoomMtgEmbedded.createClient();
 
-  // setup your signature endpoint here: https://github.com/zoom/meetingsdk-sample-signature-node.js
-  // var signatureEndpoint = 'http://localhost:4000'
-  // This Sample App has been updated to use SDK App type credentials https://marketplace.zoom.us/docs/guides/build/sdk-app
   var sdkKey = 'gBV3uWEdYIcCid6cDgTNM29zw30rIWT5Mbde'
   var meetingNumber = ''
   var role = 0
   var userEmail = ''
   var passWord = ''
-  // pass in the registrant's token if your meeting or webinar requires registration. More info here:
-  // Meetings: https://marketplace.zoom.us/docs/sdk/native-sdks/web/component-view/meetings#join-registered
-  // Webinars: https://marketplace.zoom.us/docs/sdk/native-sdks/web/component-view/webinars#join-registered
   var registrantToken = ''
 
   function genSignature(meetingNumber, role){
@@ -70,32 +91,11 @@ function App() {
     var sig = genSignature(meetingNumber, role)
     startMeeting(sig)
     setVideo(false)
-    /*
-    fetch(signatureEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        meetingNumber: meetingNumber,
-        role: role
-      })
-    }).then(res => res.json())
-    .then(response => {
-      startMeeting(response.signature)
-      setVideo(false)
-    }).catch(error => {
-      console.error(error)
-    })
-    */
-  }
-
-  function changeRoom(){
-    setRoom(!isMainRoom)
   }
 
   function startMeeting(signature) {
 
     let meetingSDKElement = document.getElementById('meetingSDKElement');
-
     client.init({
       debug: true,
       zoomAppRoot: meetingSDKElement,
@@ -115,19 +115,6 @@ function App() {
             }
           }
         }
-        /*
-        toolbar: {
-          buttons: [
-            {
-              text: 'Custom Button',
-              className: 'CustomButton',
-              onClick: () => {
-                console.log('custom button');
-              }
-            }
-          ]
-        }
-        */
       }
     });
 
@@ -142,49 +129,87 @@ function App() {
     })
   }
 
+  function setUser(e){
+    setUserType(e.currentTarget.value)
+  };
+
+  function showMainView(){
+    setMainView(true);
+  }
+
+  function changeUserToMain(){
+    setUserInMain(true)
+    socket.emit('setUserToMain', true);
+  }
+
+  function changeUserToBreakout(){
+    setUserInMain(false)
+    socket.emit('setUserToMain', false);
+  }
+
   return (
     <div className="App">
       <main>
         <h1>Sentiment Analysis Zoom Meeting</h1>
-        {/*
-        <div class="row">
-          <div id="meetingSDKElement" class="col-sm-6"></div>
-          <div class="col-sm-6">
-            <iframe hidden={hideVideo} width="560" height="315" src="https://www.youtube.com/embed/ypTjHQ-JtIk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-          </div>
+        <div hidden={isMainView}>
+          <label>You are a: </label>
+          <input
+            type='radio'
+            id='radio1'
+            value='organizer'
+            onChange={setUser}
+            checked={userType === "organizer"}
+            style={{marginLeft: "10px"}}
+          />
+          <label style={{marginLeft: "5px"}}>Organizer</label>
+          <input
+            type='radio'
+            id='radio2'
+            value='user'
+            onChange={setUser}
+            checked={userType === "user"}
+            style={{marginLeft: "20px"}}
+          />
+          <label style={{marginLeft: "5px"}}>User</label>
+          <button hidden={!userType} style={{marginLeft: "10px", "padding": "10px", "marginTop": "0px"}} onClick={ showMainView }>Confirm</button>
         </div>
-        */}
-        <div class="row">
-          <div id="meetingSDKElement" class="col-sm-6" style={{marginLeft: "50px"}}></div>
-          <div hidden={hideVideo} class="col-sm-4">
-            <label style={{fontSize: "20px"}}>{isMainRoom ? "Main Room" : "Breakout Room"}</label>
-            {isMainRoom ?
-              <iframe style={{marginLeft: "20px"}} width="560" height="315" src="https://www.youtube.com/embed/ypTjHQ-JtIk"></iframe> 
-              :
-              <iframe style={{marginLeft: "20px"}} width="560" height="315" src="https://www.youtube.com/embed/vMBIz6UyPOc"></iframe>
-            }
-            <button style={{fontSize: "16px"}} onClick={changeRoom}>{isMainRoom ? "Switch to Breakout Room" : "Switch to Main Room"}</button>
+        <div hidden={!isMainView}>
+          <div class="row">
+            <div id="meetingSDKElement" class="col-sm-6" style={{marginLeft: "50px"}}></div>
+            <div hidden={hideVideo} class="col-sm-4">
+              <label style={{fontSize: "20px"}}>{isMainRoom ? "Main Room" : "Breakout Room"}</label>
+              {isMainRoom ?
+                <iframe style={{marginLeft: "20px"}} width="560" height="315" src="https://www.youtube.com/embed/ypTjHQ-JtIk"></iframe> 
+                :
+                <iframe style={{marginLeft: "20px"}} width="560" height="315" src="https://www.youtube.com/embed/vMBIz6UyPOc"></iframe>
+              }
+            </div>
           </div>
-        </div>
 
-        <form hidden={!hideVideo}>
-          <label>Your Name:
-            <input 
-              type="text" 
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-            />
-          </label>
-          <div />
-          <label>Meeting URL:
-            <input 
-              type="text" 
-              value={meetingUrl}
-              onChange={(e) => setMeeting(e.target.value)}
-            />
-          </label>
-        </form>
-        <button hidden={!hideVideo} onClick={getSignature}>Join Meeting</button>
+          <form hidden={!hideVideo}>
+            <label hidden={userType==="organizer"}>Your Name:
+              <input 
+                type="text" 
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+              />
+            </label>
+            <div />
+            <label hidden={userType==="organizer"}>Meeting URL:
+              <input 
+                type="text" 
+                value={meetingUrl}
+                onChange={(e) => setMeeting(e.target.value)}
+              />
+            </label>
+          </form>
+          <button hidden={!hideVideo || userType==="organizer"} onClick={getSignature}>Join Meeting</button>
+          <div hidden={userType!=="organizer"}>
+            <p style={{fontSize: "16px"}}>Users are viewing: { userInMain ? "Main Room" : "Breakout Room" }</p>
+            <button style={{fontSize: "16px"}} onClick={changeUserToMain}>Switch User View to Main Room</button>
+            <button style={{fontSize: "16px", marginLeft: "20px"}} onClick={changeUserToBreakout}>Switch User View to Breakout Room</button>
+          </div>
+        </div>
       </main>
     </div>
   );

@@ -19,7 +19,7 @@ function App() {
   var sdkKey = 'gBV3uWEdYIcCid6cDgTNM29zw30rIWT5Mbde'
   var meetingNumber = '97437031435'
   var role = 0
-  var leaveUrl = 'http://localhost:3000'
+  var leaveUrl = 'http://localhost:3001'
   var userName = 'React'
   var userEmail = ''
   var passWord = ''
